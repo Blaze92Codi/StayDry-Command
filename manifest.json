@@ -1,0 +1,17 @@
+{
+  "name": "StayDry Command",
+  "short_name": "StayDry",
+  "description": "AI + IoT waterproofing command center demo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f9ff",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
