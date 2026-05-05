@@ -1,161 +1,107 @@
-import React, { useState, useMemo } from "react";
+// EXECUTIVE 2050 UI + SAFE FIREBASE + AI
+import React, { useState, useMemo, useEffect } from "react";
+
+// FIREBASE (SAFE INIT)
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBe4axVvePWHbtAr8QXu5Mvl2QUf2V_ZHc",
+  authDomain: "staydry-command.firebaseapp.com",
+  projectId: "staydry-command",
+  storageBucket: "staydry-command.appspot.com",
+  messagingSenderId: "546013069071",
+  appId: "1:546013069071:web:b0aa9ce4d00de6465ec87a"
+};
+
+let db;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch (e) {
+  console.log("Firebase already initialized");
+}
 
 /* =========================
-   FUTURE DEMO DATA
+   DEMO DATA
 ========================= */
 const demoScenarios = {
-  flood: {
-    avg: 19320,
-    trend: [12000, 14000, 16000, 17500, 19320],
-    jobs: [
-      { id: 1, type: "Emergency Pumping", status: "Active", stage: "Dispatch", photos: 6 },
-      { id: 2, type: "Basement Flood", status: "Queued", stage: "Assessment", photos: 2 }
-    ]
-  },
-  prevention: {
-    avg: 4200,
-    trend: [6000, 5200, 4800, 4500, 4200],
-    jobs: [
-      { id: 3, type: "Drain Install", status: "Complete", stage: "Closed", photos: 12 }
-    ]
-  },
-  sales: {
-    avg: 8700,
-    trend: [4000, 6000, 7200, 8100, 8700],
-    jobs: [
-      { id: 4, type: "Estimate", status: "Pending", stage: "Quote", photos: 0 }
-    ]
-  }
+  flood: { history: [12000,14000,16000,17500,19320] },
+  prevention: { history: [6000,5200,4800,4500,4200] },
+  sales: { history: [4000,6000,7200,8100,8700] }
 };
 
 /* =========================
-   AI / RISK ENGINE
+   AI ENGINE
 ========================= */
-function riskLevel(avg) {
-  if (avg > 15000) return "CRITICAL";
-  if (avg > 8000) return "ELEVATED";
+function forecastNext(history) {
+  if (history.length < 2) return history[0] || 0;
+  const trend = history[history.length - 1] - history[history.length - 2];
+  return Math.round(history[history.length - 1] + trend);
+}
+
+function riskLevel(val) {
+  if (val > 15000) return "CRITICAL";
+  if (val > 8000) return "ELEVATED";
   return "STABLE";
 }
 
-function riskColor(level) {
-  if (level === "CRITICAL") return "#ff3b30";
-  if (level === "ELEVATED") return "#ff9f0a";
-  return "#34c759";
+function recommendation(level) {
+  if (level === "CRITICAL") return "Deploy drainage + pump upgrade immediately";
+  if (level === "ELEVATED") return "Recommend preventative waterproofing";
+  return "Maintain current system";
 }
 
 /* =========================
-   MINI TREND GRAPH (no libs)
+   UI COMPONENTS
 ========================= */
+const GlassCard = ({ children }) => (
+  <div style={{ padding:20,borderRadius:16,background:"rgba(255,255,255,0.08)",backdropFilter:"blur(12px)",marginBottom:15 }}>
+    {children}
+  </div>
+);
+
 function Trend({ data }) {
   return (
-    <div style={{ display: "flex", gap: 6 }}>
-      {data.map((v, i) => (
-        <div
-          key={i}
-          style={{
-            height: v / 200,
-            width: 6,
-            background: "#4facfe",
-            borderRadius: 3
-          }}
-        />
-      ))}
+    <div style={{ display:"flex",gap:6,marginTop:10 }}>
+      {data.map((v,i)=>(<div key={i} style={{height:v/200,width:6,background:"#4facfe"}}/>))}
     </div>
   );
 }
 
 /* =========================
-   EXECUTIVE OWNER UI
+   OWNER UI
 ========================= */
-function OwnerUI({ avg, jobs, trend }) {
-  const level = riskLevel(avg);
+function OwnerUI({ history }) {
+  const next = forecastNext(history);
+  const level = riskLevel(next);
 
   return (
-    <div style={{ padding: 30 }}>
-      <h2 style={{ color: "white" }}>Executive Command Center</h2>
+    <div style={{ padding:30,color:"white" }}>
+      <h2>AI Command Center</h2>
 
-      {/* KPI GRID */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-        
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:20 }}>
         <GlassCard>
-          <h4>Avg Water</h4>
-          <h1>{avg.toLocaleString()}</h1>
-          <Trend data={trend} />
+          <h4>Current Avg</h4>
+          <h1>{history[history.length-1]?.toLocaleString()}</h1>
+          <Trend data={history} />
         </GlassCard>
 
         <GlassCard>
-          <h4>Risk Level</h4>
-          <h1 style={{ color: riskColor(level) }}>{level}</h1>
+          <h4>Predicted Next</h4>
+          <h1>{next.toLocaleString()}</h1>
         </GlassCard>
 
         <GlassCard>
-          <h4>AI Insight</h4>
-          <p>
-            {level === "CRITICAL"
-              ? "Immediate system intervention required"
-              : level === "ELEVATED"
-              ? "Monitor and optimize discharge"
-              : "System stable and optimized"}
-          </p>
+          <h4>Risk Forecast</h4>
+          <h1>{level}</h1>
         </GlassCard>
       </div>
 
-      {/* LIVE JOBS */}
-      <div style={{ marginTop: 30 }}>
-        <GlassCard>
-          <h3>Live Operations</h3>
-
-          {jobs.map(j => (
-            <div key={j.id} style={jobStyle}>
-              <strong>{j.type}</strong>
-              <p>Status: {j.status}</p>
-              <p>Stage: {j.stage}</p>
-              <p>Photos: {j.photos}</p>
-            </div>
-          ))}
-        </GlassCard>
-      </div>
-    </div>
-  );
-}
-
-/* =========================
-   OTHER ROLES
-========================= */
-function SalesUI({ jobs }) {
-  return (
-    <div style={{ padding: 30, color: "white" }}>
-      <h2>Revenue Intelligence</h2>
-      {jobs.map(j => (
-        <GlassCard key={j.id}>
-          <strong>{j.type}</strong>
-          <p>{j.status}</p>
-        </GlassCard>
-      ))}
-    </div>
-  );
-}
-
-function FieldUI({ jobs }) {
-  return (
-    <div style={{ padding: 30, color: "white" }}>
-      <h2>Field Operations</h2>
-      {jobs.map(j => (
-        <GlassCard key={j.id}>
-          <strong>{j.type}</strong>
-          <p>{j.stage}</p>
-        </GlassCard>
-      ))}
-    </div>
-  );
-}
-
-function ClientUI({ avg }) {
-  return (
-    <div style={{ padding: 30, color: "white" }}>
-      <h2>Client Overview</h2>
-      <h1>{avg.toLocaleString()} gal/day</h1>
-      <p>System actively managing water risk.</p>
+      <GlassCard>
+        <h3>AI Recommendation</h3>
+        <p>{recommendation(level)}</p>
+      </GlassCard>
     </div>
   );
 }
@@ -164,84 +110,54 @@ function ClientUI({ avg }) {
    MAIN APP
 ========================= */
 export default function App() {
-  const [demo, setDemo] = useState(true);
-  const [scenario, setScenario] = useState("flood");
-  const [role, setRole] = useState("Owner");
+  const [scenario,setScenario]=useState("flood");
+  const [history,setHistory]=useState([]);
+  const [mode,setMode]=useState("demo");
 
-  const data = useMemo(() => {
-    if (demo) return demoScenarios[scenario];
-    return { avg: 0, jobs: [], trend: [] };
-  }, [demo, scenario]);
+  // SAFE FIREBASE LOAD
+  useEffect(()=>{
+    if(mode==="live" && db){
+      (async ()=>{
+        try {
+          const snap = await getDocs(collection(db,"jobs"));
+          const values = snap.docs
+            .map(d=>d.data().gallons || 0)
+            .filter(v=>v>0);
+          if(values.length>0) setHistory(values);
+        } catch(err){
+          console.error("Firebase load error", err);
+        }
+      })();
+    }
+  },[mode]);
+
+  const data = useMemo(()=>{
+    if(mode==="demo") return demoScenarios[scenario].history;
+    return history.length?history:[1000];
+  },[scenario,mode,history]);
 
   return (
-    <div style={appStyle}>
+    <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",fontFamily:"Inter" }}>
 
-      {/* TOP COMMAND BAR */}
-      <div style={topBar}>
-        <strong>StayDry Command™</strong>
+      <div style={{ display:"flex",justifyContent:"space-between",padding:20,color:"white" }}>
+        <strong>StayDry AI Command™</strong>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => setDemo(!demo)}>
-            Demo {demo ? "ON" : "OFF"}
-          </button>
+        <div>
+          <select onChange={(e)=>setMode(e.target.value)} value={mode}>
+            <option value="demo">Demo</option>
+            <option value="live">Live</option>
+          </select>
 
-          <select value={scenario} onChange={(e) => setScenario(e.target.value)}>
+          <select onChange={(e)=>setScenario(e.target.value)} value={scenario}>
             <option value="flood">Flood</option>
             <option value="prevention">Prevention</option>
             <option value="sales">Sales</option>
           </select>
-
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="Owner">Owner</option>
-            <option value="Sales">Sales</option>
-            <option value="Field">Field</option>
-            <option value="Client">Client</option>
-          </select>
         </div>
       </div>
 
-      {/* ROLE UI */}
-      {role === "Owner" && <OwnerUI {...data} />}
-      {role === "Sales" && <SalesUI {...data} />}
-      {role === "Field" && <FieldUI {...data} />}
-      {role === "Client" && <ClientUI {...data} />}
+      <OwnerUI history={data} />
+
     </div>
   );
 }
-
-/* =========================
-   FUTURE UI STYLES
-========================= */
-const appStyle = {
-  minHeight: "100vh",
-  background: "linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
-  fontFamily: "Inter, sans-serif"
-};
-
-const topBar = {
-  display: "flex",
-  justifyContent: "space-between",
-  padding: 20,
-  background: "rgba(255,255,255,0.05)",
-  backdropFilter: "blur(10px)",
-  color: "white"
-};
-
-const GlassCard = ({ children }) => (
-  <div style={{
-    padding: 20,
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.08)",
-    backdropFilter: "blur(12px)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
-  }}>
-    {children}
-  </div>
-);
-
-const jobStyle = {
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 10,
-  background: "rgba(255,255,255,0.05)"
-};
