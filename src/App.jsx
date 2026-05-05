@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from "react";
 
 /* =========================
-   DEMO DATA (SIMULATION)
+   FUTURE DEMO DATA
 ========================= */
 const demoScenarios = {
   flood: {
     avg: 19320,
+    trend: [12000, 14000, 16000, 17500, 19320],
     jobs: [
       { id: 1, type: "Emergency Pumping", status: "Active", stage: "Dispatch", photos: 6 },
       { id: 2, type: "Basement Flood", status: "Queued", stage: "Assessment", photos: 2 }
@@ -13,12 +14,14 @@ const demoScenarios = {
   },
   prevention: {
     avg: 4200,
+    trend: [6000, 5200, 4800, 4500, 4200],
     jobs: [
-      { id: 3, type: "French Drain Install", status: "Complete", stage: "Closed", photos: 12 }
+      { id: 3, type: "Drain Install", status: "Complete", stage: "Closed", photos: 12 }
     ]
   },
   sales: {
     avg: 8700,
+    trend: [4000, 6000, 7200, 8100, 8700],
     jobs: [
       { id: 4, type: "Estimate", status: "Pending", stage: "Quote", photos: 0 }
     ]
@@ -26,121 +29,139 @@ const demoScenarios = {
 };
 
 /* =========================
-   HELPERS
+   AI / RISK ENGINE
 ========================= */
 function riskLevel(avg) {
-  if (avg > 15000) return "High";
-  if (avg > 8000) return "Moderate";
-  return "Low";
+  if (avg > 15000) return "CRITICAL";
+  if (avg > 8000) return "ELEVATED";
+  return "STABLE";
 }
 
 function riskColor(level) {
-  if (level === "High") return "#ff4d4f";
-  if (level === "Moderate") return "#faad14";
-  return "#52c41a";
+  if (level === "CRITICAL") return "#ff3b30";
+  if (level === "ELEVATED") return "#ff9f0a";
+  return "#34c759";
 }
 
 /* =========================
-   OWNER UI (EXECUTIVE VIEW)
+   MINI TREND GRAPH (no libs)
 ========================= */
-function OwnerUI({ avg, jobs }) {
+function Trend({ data }) {
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {data.map((v, i) => (
+        <div
+          key={i}
+          style={{
+            height: v / 200,
+            width: 6,
+            background: "#4facfe",
+            borderRadius: 3
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* =========================
+   EXECUTIVE OWNER UI
+========================= */
+function OwnerUI({ avg, jobs, trend }) {
   const level = riskLevel(avg);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Executive Dashboard</h2>
+    <div style={{ padding: 30 }}>
+      <h2 style={{ color: "white" }}>Executive Command Center</h2>
 
-      {/* KPI ROW */}
-      <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-        <div style={cardStyle}>
-          <h4>Avg Pump Volume</h4>
-          <h2>{avg.toLocaleString()}</h2>
-        </div>
+      {/* KPI GRID */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+        
+        <GlassCard>
+          <h4>Avg Water</h4>
+          <h1>{avg.toLocaleString()}</h1>
+          <Trend data={trend} />
+        </GlassCard>
 
-        <div style={{ ...cardStyle, borderLeft: `6px solid ${riskColor(level)}` }}>
+        <GlassCard>
           <h4>Risk Level</h4>
-          <h2 style={{ color: riskColor(level) }}>{level}</h2>
-        </div>
+          <h1 style={{ color: riskColor(level) }}>{level}</h1>
+        </GlassCard>
 
-        <div style={cardStyle}>
-          <h4>Active Jobs</h4>
-          <h2>{jobs.length}</h2>
-        </div>
+        <GlassCard>
+          <h4>AI Insight</h4>
+          <p>
+            {level === "CRITICAL"
+              ? "Immediate system intervention required"
+              : level === "ELEVATED"
+              ? "Monitor and optimize discharge"
+              : "System stable and optimized"}
+          </p>
+        </GlassCard>
       </div>
 
-      {/* JOB LIST */}
-      <div style={cardStyle}>
-        <h3>Live Operations</h3>
+      {/* LIVE JOBS */}
+      <div style={{ marginTop: 30 }}>
+        <GlassCard>
+          <h3>Live Operations</h3>
 
-        {jobs.length === 0 && <p>No active jobs</p>}
-
-        {jobs.map((j) => (
-          <div key={j.id} style={jobStyle}>
-            <strong>{j.type}</strong>
-            <p>Status: {j.status}</p>
-            <p>Stage: {j.stage}</p>
-            <p>Photos: {j.photos}</p>
-          </div>
-        ))}
+          {jobs.map(j => (
+            <div key={j.id} style={jobStyle}>
+              <strong>{j.type}</strong>
+              <p>Status: {j.status}</p>
+              <p>Stage: {j.stage}</p>
+              <p>Photos: {j.photos}</p>
+            </div>
+          ))}
+        </GlassCard>
       </div>
     </div>
   );
 }
 
 /* =========================
-   SALES UI
+   OTHER ROLES
 ========================= */
 function SalesUI({ jobs }) {
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Sales Pipeline</h2>
-
-      {jobs.map((j) => (
-        <div key={j.id} style={jobStyle}>
+    <div style={{ padding: 30, color: "white" }}>
+      <h2>Revenue Intelligence</h2>
+      {jobs.map(j => (
+        <GlassCard key={j.id}>
           <strong>{j.type}</strong>
-          <p>Status: {j.status}</p>
-          <p>Stage: {j.stage}</p>
-        </div>
+          <p>{j.status}</p>
+        </GlassCard>
       ))}
     </div>
   );
 }
 
-/* =========================
-   FIELD TECH UI
-========================= */
 function FieldUI({ jobs }) {
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: 30, color: "white" }}>
       <h2>Field Operations</h2>
-
-      {jobs.map((j) => (
-        <div key={j.id} style={jobStyle}>
+      {jobs.map(j => (
+        <GlassCard key={j.id}>
           <strong>{j.type}</strong>
-          <p>Stage: {j.stage}</p>
-          <p>Photos Required: {j.photos}</p>
-        </div>
+          <p>{j.stage}</p>
+        </GlassCard>
       ))}
     </div>
   );
 }
 
-/* =========================
-   CLIENT UI
-========================= */
 function ClientUI({ avg }) {
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Client View</h2>
-      <p>Your system is processing approximately:</p>
-      <h1>{avg.toLocaleString()} gallons/day</h1>
-      <p>We are actively managing your water risk.</p>
+    <div style={{ padding: 30, color: "white" }}>
+      <h2>Client Overview</h2>
+      <h1>{avg.toLocaleString()} gal/day</h1>
+      <p>System actively managing water risk.</p>
     </div>
   );
 }
 
 /* =========================
-   MAIN APP (MERGED UI)
+   MAIN APP
 ========================= */
 export default function App() {
   const [demo, setDemo] = useState(true);
@@ -149,28 +170,19 @@ export default function App() {
 
   const data = useMemo(() => {
     if (demo) return demoScenarios[scenario];
-    return { avg: 0, jobs: [] }; // placeholder for Firebase later
+    return { avg: 0, jobs: [], trend: [] };
   }, [demo, scenario]);
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", background: "#f5f7fa", minHeight: "100vh" }}>
+    <div style={appStyle}>
 
-      {/* =========================
-         EXECUTIVE CONTROL BAR
-      ========================= */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "15px",
-        background: "#0b1f3a",
-        color: "white",
-        alignItems: "center"
-      }}>
+      {/* TOP COMMAND BAR */}
+      <div style={topBar}>
         <strong>StayDry Command™</strong>
 
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => setDemo(!demo)}>
-            Demo: {demo ? "ON" : "OFF"}
+            Demo {demo ? "ON" : "OFF"}
           </button>
 
           <select value={scenario} onChange={(e) => setScenario(e.target.value)}>
@@ -182,37 +194,54 @@ export default function App() {
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="Owner">Owner</option>
             <option value="Sales">Sales</option>
-            <option value="Field">Field Tech</option>
+            <option value="Field">Field</option>
             <option value="Client">Client</option>
           </select>
         </div>
       </div>
 
-      {/* =========================
-         ROLE-BASED UI
-      ========================= */}
-      {role === "Owner" && <OwnerUI avg={data.avg} jobs={data.jobs} />}
-      {role === "Sales" && <SalesUI jobs={data.jobs} />}
-      {role === "Field" && <FieldUI jobs={data.jobs} />}
-      {role === "Client" && <ClientUI avg={data.avg} />}
+      {/* ROLE UI */}
+      {role === "Owner" && <OwnerUI {...data} />}
+      {role === "Sales" && <SalesUI {...data} />}
+      {role === "Field" && <FieldUI {...data} />}
+      {role === "Client" && <ClientUI {...data} />}
     </div>
   );
 }
 
 /* =========================
-   STYLES
+   FUTURE UI STYLES
 ========================= */
-const cardStyle = {
-  background: "white",
-  padding: "15px",
-  borderRadius: "10px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  flex: 1
+const appStyle = {
+  minHeight: "100vh",
+  background: "linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
+  fontFamily: "Inter, sans-serif"
 };
 
+const topBar = {
+  display: "flex",
+  justifyContent: "space-between",
+  padding: 20,
+  background: "rgba(255,255,255,0.05)",
+  backdropFilter: "blur(10px)",
+  color: "white"
+};
+
+const GlassCard = ({ children }) => (
+  <div style={{
+    padding: 20,
+    borderRadius: 16,
+    background: "rgba(255,255,255,0.08)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+  }}>
+    {children}
+  </div>
+);
+
 const jobStyle = {
-  border: "1px solid #ddd",
-  padding: "10px",
-  marginTop: "10px",
-  borderRadius: "8px"
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 10,
+  background: "rgba(255,255,255,0.05)"
 };
