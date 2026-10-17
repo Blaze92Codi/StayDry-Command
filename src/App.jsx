@@ -1,26 +1,5 @@
 // EXECUTIVE 2050 UI + SAFE FIREBASE + AI
-import React, { useState, useMemo, useEffect } from "react";
-
-// FIREBASE (SAFE INIT)
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBe4axVvePWHbtAr8QXu5Mvl2QUf2V_ZHc",
-  authDomain: "staydry-command.firebaseapp.com",
-  projectId: "staydry-command",
-  storageBucket: "staydry-command.appspot.com",
-  messagingSenderId: "546013069071",
-  appId: "1:546013069071:web:b0aa9ce4d00de6465ec87a"
-};
-
-let db;
-try {
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-} catch (e) {
-  console.log("Firebase already initialized");
-}
+import React, { useState, useMemo } from "react";
 
 /* =========================
    DEMO DATA
@@ -111,30 +90,7 @@ function OwnerUI({ history }) {
 ========================= */
 export default function App() {
   const [scenario,setScenario]=useState("flood");
-  const [history,setHistory]=useState([]);
-  const [mode,setMode]=useState("demo");
-
-  // SAFE FIREBASE LOAD
-  useEffect(()=>{
-    if(mode==="live" && db){
-      (async ()=>{
-        try {
-          const snap = await getDocs(collection(db,"jobs"));
-          const values = snap.docs
-            .map(d=>d.data().gallons || 0)
-            .filter(v=>v>0);
-          if(values.length>0) setHistory(values);
-        } catch(err){
-          console.error("Firebase load error", err);
-        }
-      })();
-    }
-  },[mode]);
-
-  const data = useMemo(()=>{
-    if(mode==="demo") return demoScenarios[scenario].history;
-    return history.length?history:[1000];
-  },[scenario,mode,history]);
+  const data = useMemo(() => demoScenarios[scenario].history, [scenario]);
 
   return (
     <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",fontFamily:"Inter" }}>
@@ -143,10 +99,7 @@ export default function App() {
         <strong>StayDry AI Command™</strong>
 
         <div>
-          <select onChange={(e)=>setMode(e.target.value)} value={mode}>
-            <option value="demo">Demo</option>
-            <option value="live">Live</option>
-          </select>
+          <span>Demo data</span>
 
           <select onChange={(e)=>setScenario(e.target.value)} value={scenario}>
             <option value="flood">Flood</option>
